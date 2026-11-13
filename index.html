@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오늘 뭐 먹지?</title>
+
+<style>
+/* ===== 1. 색깔 모음 (여기만 바꾸면 전체 색이 바뀜) ===== */
+:root {
+  --bg: #e4e6e3;
+  --box: #8fa192;
+  --box-ink: #16211a;
+  --ph: #7a8c7e;
+  --ink: #1d2420;
+  --sub: #4b5750;
+  --chip: #f3f5f2;
+  --chip-on: #2f3d34;
+  --chip-on-ink: #f3f5f2;
+  --line: #b7beb8;
+}
+
+/* 폰이 다크모드일 때 쓰는 색깔 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b201d;
+    --box: #52655a;
+    --box-ink: #f1f5f2;
+    --ph: #475a4f;
+    --ink: #e8ede9;
+    --sub: #a5b0a8;
+    --chip: #262d29;
+    --chip-on: #c9d6cc;
+    --chip-on-ink: #18201b;
+    --line: #37413b;
+  }
+}
+
+/* ===== 2. 모양 꾸미기 ===== */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+
+/* 화면 전체를 감싸는 상자 (폭 최대 440px) */
+main {
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 20px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+/* 한식/중식/양식 버튼 줄 */
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* 선택된 버튼은 진한 색으로 */
+.chip[aria-pressed="true"] {
+  background: var(--chip-on);
+  color: var(--chip-on-ink);
+  border-color: var(--chip-on);
+}
+
+/* 결과 카드 */
+.card {
+  background: var(--box);
+  color: var(--box-ink);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 사진이 들어가는 칸 (가로:세로 = 8:5) */
+.photo {
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  border-radius: 14px;
+  background: var(--ph);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tag {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.name {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+
+/* 돌아가는 동안 글자를 흐리게 */
+.card.roll .name {
+  opacity: 0.55;
+}
+
+/* 큰 버튼 */
+.go {
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 18px;
+  border-radius: 16px;
+  border: 0;
+  background: var(--chip-on);
+  color: var(--chip-on-ink);
+  cursor: pointer;
+}
+
+.go:active {
+  transform: scale(0.98);
+}
+
+.hint {
+  margin: 0;
+  color: var(--sub);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+</style>
+</head>
+
+<body>
+<!-- ===== 3. 화면에 보이는 것들 ===== -->
+<main>
+  <h1>오늘 뭐 먹지?</h1>
+
+  <div class="chips" role="group" aria-label="음식 종류">
+    <button class="chip" data-c="전체" aria-pressed="true">전체</button>
+    <button class="chip" data-c="한식" aria-pressed="false">한식</button>
+    <button class="chip" data-c="중식" aria-pressed="false">중식</button>
+    <button class="chip" data-c="양식" aria-pressed="false">양식</button>
+  </div>
+
+  <section class="card" id="card" aria-live="polite">
+    <div class="photo" id="photoBox">사진이 여기에 나와요</div>
+    <div class="tag" id="tagText">버튼을 눌러 시작하세요</div>
+    <div class="name" id="nameText">?</div>
+  </section>
+
+  <button class="go" id="goButton">골라줘</button>
+  <p class="hint" id="hintText">파이썬을 불러오는 중... (처음에는 10초쯤 걸려요)</p>
+</main>
+
+<!-- 이 페이지의 동작은 main.py (파이썬)가 담당합니다 -->
+<script type="module" src="https://pyscript.net/releases/2025.10.1/core.js"></script>
+<script type="py" src="./main.py"></script>
+</body>
+</html>
